@@ -13,14 +13,17 @@ public class ProtoBufDemo : MonoBehaviour
 
 
 
-    private void LoginRequest()
-    {
+    private void LoginRequest() {
 
-        // client side code
-        var msg = ClientMessage.CreateBuilder().LoginUserRequest.ToBuilder()
-                                    .SetUserName("test user")
-                                    .SetHashedPassword("123456789")
-                                    .Build();
+        var msg = new ClientMessage();
+        
+        
+        
+       // client side code
+        // var msg = ClientMessage.CreateBuilder().LoginUserRequest.ToBuilder()
+        //                             .SetUserName("test user")
+        //                             .SetHashedPassword("123456789")
+        //                             .Build();
 
         ClientMessage builder = ClientMessage.CreateBuilder()
             .SetLoginUserRequest(msg)
