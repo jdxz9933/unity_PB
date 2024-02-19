@@ -1,69 +1,55 @@
 ﻿using UnityEngine;
 using System.Collections;
+using DPLogin;
+using Google.Protobuf;
 
-public class ProtoBufDemo : MonoBehaviour
-{
-
+public class ProtoBufDemo : MonoBehaviour {
     // Use this for initialization
-    void Start()
-    {
+    void Start() {
         LoginRequest();
         LoginResponse();
     }
 
+    private object GetProtoObject(ProtoEventName eventName) {
+        if (ProtoEventNameTool.ProtoMap.TryGetValue((int)eventName, out var type)) {
+            var obj = System.Activator.CreateInstance(type);
+            return obj;
+        }
+        return null;
+    }
 
+    private object ParseProtoObject(byte[] bytes, ProtoEventName eventName) {
+        if (ProtoEventNameTool.ProtoMap.TryGetValue((int)eventName, out var type)) {
+            var obj = System.Activator.CreateInstance(type);
+            var parser = obj as IMessage;
+            parser.MergeFrom(bytes);
+            return obj;
+        }
+        return null;
+    }
 
     private void LoginRequest() {
+        var obj = GetProtoObject(ProtoEventName.DPUserLoginInfoReq);
+        DPUserLoginInfoReq userLoginInfo = obj as DPUserLoginInfoReq;
+        userLoginInfo.SzAccount = "test user";
+        userLoginInfo.SzPassword = "123456789";
+        userLoginInfo.SzMacAdress = "123456789";
 
-        var msg = new ClientMessage();
-        
-        
-        
-       // client side code
-        // var msg = ClientMessage.CreateBuilder().LoginUserRequest.ToBuilder()
-        //                             .SetUserName("test user")
-        //                             .SetHashedPassword("123456789")
-        //                             .Build();
-
-        ClientMessage builder = ClientMessage.CreateBuilder()
-            .SetLoginUserRequest(msg)
-            .SetType(ClientMessageType.LOGIN_USER_REQUEST)
-            .Build();
-
-        // now login msg is ready to send over network to server (seralize)
-        var loginBytes = builder.ToByteArray();
-
-        // deseralize
-        var loginObject = ClientMessage.ParseFrom(loginBytes);
-
-        Debug.Log(loginObject.Type);
-        Debug.Log(loginObject.LoginUserRequest.UserName);
+        var bytes = userLoginInfo.ToByteArray();
+        var loginInfo = ParseProtoObject(bytes, ProtoEventName.DPUserLoginInfoReq) as DPUserLoginInfoReq;
+        Debug.Log(loginInfo.SzAccount);
+        Debug.Log(loginInfo.SzPassword);
     }
 
+    private void LoginResponse() {
+        DPAccountVerifyResultResp accountVerifyResultResp = new DPAccountVerifyResultResp();
+        accountVerifyResultResp.SzAccount = "test user";
+        accountVerifyResultResp.NResult = AccountLoginVerifyResult.AccVerifyRetClientversionerror;
 
-    private void LoginResponse()
-    {
+        var bytes = accountVerifyResultResp.ToByteArray();
+        var accountVerifyResultRespReceived = DPAccountVerifyResultResp.Parser.ParseFrom(bytes);
 
-        var msg = ServerMessage.CreateBuilder().LoginUserResponse.ToBuilder()
-            .SetMetadataVersion(1)
-            .SetGameVersion(1)
-            .Build();
-
-        ServerMessage loginResponseBuilder = ServerMessage.CreateBuilder()
-           .SetLoginUserResponse(msg)
-           .SetType(ServerMessageType.LOGIN_USER_RESPONSE)
-           .Build();
-
-
-
-        // seralize
-        var loginRes = loginResponseBuilder.ToByteArray();
-
-        // de-seralize
-        var serverMsgReceived = ServerMessage.ParseFrom(loginRes);
-
-        Debug.Log(serverMsgReceived.Type);
-        Debug.Log(serverMsgReceived.LoginUserResponse.GameVersion);
+        Debug.Log(accountVerifyResultRespReceived.SzAccount);
+        Debug.Log(accountVerifyResultRespReceived.NResult);
     }
-
 }
